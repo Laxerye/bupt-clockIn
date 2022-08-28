@@ -93,7 +93,7 @@ def wx_pusher(msg: str, js: json):
 def server_push(msg: str, js: json):
     server_push_url = "https://sctapi.ftqq.com/{}.send?title={}".format(js["sendKey"], msg)
     headers = {
-        "Content-Type": "application/json"
+        'Content-type': 'application/x-www-form-urlencoded',
     }
     res = requests.post(url=server_push_url, headers=headers)
     return res
