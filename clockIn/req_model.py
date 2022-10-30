@@ -1,9 +1,12 @@
 import json
+import logging
 import re
 import time
 
 import requests
 from bs4 import BeautifulSoup
+
+logging.basicConfig(level=logging.INFO)
 
 
 class ClockIn:
@@ -12,6 +15,7 @@ class ClockIn:
     __session = ""
     __login_url = "https://auth.bupt.edu.cn/authserver/login"
     __upload_url = "https://app.bupt.edu.cn/ncov/wap/default/save"
+    __old_info_url = "https://app.bupt.edu.cn/ncov/wap/default/index?history"
     __headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 "
                       "Safari/537.36"
@@ -25,12 +29,18 @@ class ClockIn:
     def __get_execution(self):
         res = self.__session.get(url=self.__login_url, headers=self.__headers)
         text = BeautifulSoup(res.text, "html.parser")
-        execution = list(text.select("input"))[3]
+        try:
+            execution = list(text.select("input"))[3]
+        except:
+            logging.error(" get execution failed")
+            return ""
         pattern = re.compile(r"value=\"([^\"]*)\"", re.MULTILINE | re.DOTALL)
         return re.findall(pattern, str(execution))
 
     def __get_cookie(self):
         params = self.__get_execution()
+        if params == "":
+            return
         data = {
             "username": self.__username,
             "password": self.__password,
@@ -43,12 +53,18 @@ class ClockIn:
 
     def __get_html(self):
         self.__get_cookie()
-        url = "https://app.bupt.edu.cn/ncov/wap/default/index?history"
-        res = self.__session.get(url=url, headers=self.__headers)
-        return res.text
+        res = self.__session.get(url=self.__old_info_url, headers=self.__headers)
+        if res.status_code == 200:
+            return res.text
+        else:
+            return ""
 
     def __get_old_info(self):
-        res = BeautifulSoup(self.__get_html(), "html.parser")
+        try:
+            res = BeautifulSoup(self.__get_html(), "html.parser")
+        except:
+            logging.error(" parse old info failed")
+            return ""
         script = list(res.select("script[type='text/javascript']"))[1]
         pattern = re.compile(r"oldInfo: {.*?},$", re.MULTILINE | re.DOTALL)
         try:
@@ -96,6 +112,11 @@ def server_push(msg: str, js: json):
         'Content-type': 'application/x-www-form-urlencoded',
     }
     res = requests.post(url=server_push_url, headers=headers)
+    try:
+        params = json.loads(res.text)
+        logging.info(" server push success ~")
+    except:
+        logging.error(" parse server push result failed ~")
     return res
 
 

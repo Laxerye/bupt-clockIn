@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time
 from datetime import datetime
@@ -10,7 +11,12 @@ import req_model
 
 def main():
     tz = pytz.timezone('Asia/Shanghai')
-    data = json.loads(os.environ['DATA'])
+    data = {}
+    try:
+        data = json.loads(os.environ['DATA'])
+    except:
+        logging.error(" parse json data failed, please check data again")
+        return
     for item in data:
         for i in range(3):
             time.sleep(i * 5)
@@ -20,7 +26,8 @@ def main():
                 if msg == "":
                     print("{} 打卡失败!!".format(datetime.fromtimestamp(int(time.time()), tz).strftime('%H:%M')))
                     req_model.push_msg(
-                        "{} 打卡失败!!".format(datetime.fromtimestamp(int(time.time()), tz).strftime('%H:%M')), data[item])
+                        "{} 打卡失败!!".format(datetime.fromtimestamp(int(time.time()), tz).strftime('%H:%M')),
+                        data[item])
                 elif json.loads(msg)["m"] == "今天已经填报了" or json.loads(msg)["m"] == "操作成功":
                     print(
                         "{} {}".format(datetime.fromtimestamp(int(time.time()), tz).strftime('%H:%M'), json.loads(msg)[
@@ -39,6 +46,7 @@ def main():
             else:
                 print("{}'s username or password is null".format(item))
                 break
+
 
 if __name__ == '__main__':
     main()

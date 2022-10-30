@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time
 
@@ -6,8 +7,13 @@ import req_model
 
 
 def main():
+    data = {}
     with open(os.path.dirname(__file__) + "/config.json", "r") as f:
-        data = json.load(f)
+        try:
+            data = json.load(f)
+        except:
+            logging.error(" parse json data failed, please check data again")
+            return
     for item in data:
         for i in range(3):
             time.sleep(i * 5)
